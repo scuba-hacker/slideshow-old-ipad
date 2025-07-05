@@ -1,4 +1,4 @@
-A slideshow website / python flask server which implements a slideshow which works on an iPad 2 running iOS 9 - plus any other newer device.
+A website with python flask server implementing a slideshow which works on an iPad 2 running iOS 9 - plus any newer device. Uses very basic Javascript of the iOS 9 era.
 
 Repurpose an iPad 2 as a digital photo frame where images are stored on your NAS or the web server host. Photos are not copied to the iPad making it easy to change the image list.
 
