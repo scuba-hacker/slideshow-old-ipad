@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Slideshow</title>
+
+  <!-- Suitable for iPad 2 using iOS 9 -->
+
+  <!-- Enable web app mode on iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Slideshow">
+
+  <link rel="apple-touch-icon" href="photos/IMG_0010.JPG"> <!-- Or any image -->
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      background-color: black;
+      text-align: center;
+    }
+    img {
+      max-width: 100%;
+      max-height: 100vh;
+      display: block;
+      margin: 0 auto;
+    }
+    
+    #filename {
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      color: #aaa; /* light grey */
+      font-family: sans-serif;
+      font-size: 1em;
+      background-color: rgba(0, 0, 0, 0.3); /* optional: subtle background */
+      padding: 5px;
+      border-radius: 5px; /* optional, still works in old Safari */
+      z-index: 9999; /* ensures filename stays above both images and is visible */
+    }
+
+#status-indicator {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.5); /* subtle dark background */
+  padding: 3px;                        /* gives space around SVG */
+  border-radius: 12px;                  /* soft edges */
+  opacity: 0;
+  pointer-events: none;
+  z-index: 9999;
+  transition: opacity 0.5s ease-in-out;
+}
+
+
+#image-counter {
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+  color: #aaa;
+  font-family: sans-serif;
+  font-size: 1em;
+  background-color: rgba(0, 0, 0, 0.3);
+  padding: 5px;
+  border-radius: 5px;
+  z-index: 9999;
+}
+
+  .ripple {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  margin: -40px 0 0 -40px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  opacity: 0.8;
+  z-index: 9999;
+  pointer-events: none;
+  animation: ripple-fade 0.6s ease-out forwards;
+  }
+
+  .trail-dot {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9998;
+  animation: trail-fade 0.5s ease-out forwards;
+}
+
+@keyframes trail-fade {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+@keyframes ripple-fade {
+  0% {
+    transform: scale(0.1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+}
+
+  </style>
+</head>
+<body>
+
+<div id="filename"></div>
+
+<div id="status-indicator"></div>
+
+<div id="image-counter"></div>
+
+<div id="slideshow-container">
+  <img id="img1" class="slideshow" src="" alt="Slideshow Image 1" />
+  <img id="img2" class="slideshow" src="" alt="Slideshow Image 2" />
+</div>
+
+<style>
+  #slideshow-container {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+    background-color: black;
+  }
+  .slideshow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100vw;
+    height: 100vh;
+    object-fit: contain;
+    transform: translate(-50%, -50%);
+    transition: opacity 1s ease-in-out;
+  }
+  #img1 {
+    z-index: 1;
+  }
+  #img2 {
+    z-index: 2;
+  }
+ 
+ html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  touch-action: none; /* newer browsers */
+}
+</style>
+
+
+<script>
+  var slideShowDelaySeconds = 15;
+  var images = [];
+  var current = 0;
+  var currentImg = 1;
+  var isPaused = false;
+  var slideshowInterval = null;
+  var touchStartX = 0;
+  var touchEndX = 0;
+  var isSwiping = false;
+
+  function loadImages() {
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET", "photos/", true);
+    xhr.onload = function () {
+      if (xhr.status === 200) {
+        var parser = new DOMParser();
+        var doc = parser.parseFromString(xhr.responseText, "text/html");
+        var links = doc.getElementsByTagName("a");
+        for (var i = 0; i < links.length; i++) {
+          var href = links[i].getAttribute("href");
+          if (href && href.match(/\.(jpe?g|png)$/i)) {
+            images.push("photos/" + href);
+          }
+        }
+        if (images.length > 0) startSlideshow();
+      }
+    };
+    xhr.send();
+  }
+
+function updateCounter() {
+  var counter = document.getElementById("image-counter");
+  counter.innerHTML = (current + 1) + " / " + images.length;
+}
+
+    function updateImage() {
+    var img1 = document.getElementById("img1");
+    var img2 = document.getElementById("img2");
+    var bottomImg = currentImg === 1 ? img1 : img2;
+    var topImg = currentImg === 1 ? img2 : img1;
+
+    topImg.src = images[current];
+    topImg.style.opacity = 0;
+    void topImg.offsetWidth; // force reflow
+    topImg.style.opacity = 1;
+    bottomImg.style.opacity = 0;
+
+    currentImg = 3 - currentImg;
+
+    var name = document.getElementById("filename");
+    name.innerHTML = images[current].split("/").pop();
+
+    updateCounter();
+	}
+
+  function startSlideshow() {
+    updateImage();
+    slideshowInterval = setInterval(function () {
+      current = (current + 1) % images.length;
+      updateImage();
+    }, slideShowDelaySeconds * 1000);
+  }
+
+  function stopSlideshow() {
+    clearInterval(slideshowInterval);
+    slideshowInterval = null;
+  }
+
+  function toggleSlideshow() {
+    if (isPaused) {
+      startSlideshow();
+      showStatusIcon("play");
+    } else {
+      stopSlideshow();
+      showStatusIcon("pause");
+    }
+    isPaused = !isPaused;
+  }
+
+  function nextImage() {
+    current = (current + 1) % images.length;
+    updateImage();
+  }
+
+  function prevImage() {
+    current = (current - 1 + images.length) % images.length;
+    updateImage();
+  }
+function showStatusIcon(type) {
+  var indicator = document.getElementById("status-indicator");
+
+  var icon = document.createElement("img");
+  icon.src = (type === "play") ? "play.svg" : "pause.svg";
+  
+  icon.style.width = "150px";
+  icon.style.height = "150px";
+
+  indicator.innerHTML = "";
+  indicator.appendChild(icon);
+
+  indicator.style.opacity = 1;
+  setTimeout(function () {
+    indicator.style.opacity = 0;
+  }, 800);
+}
+
+
+  function showStatus(message) {
+    var indicator = document.getElementById("status-indicator");
+    indicator.textContent = message;
+    indicator.style.opacity = 1;
+    setTimeout(function () {
+      indicator.style.opacity = 0;
+    }, 1000);
+  }
+
+  function showRipple(x, y) {
+    var ripple = document.createElement("div");
+    ripple.className = "ripple";
+    ripple.style.left = x + "px";
+    ripple.style.top = y + "px";
+    document.body.appendChild(ripple);
+    setTimeout(function () {
+      document.body.removeChild(ripple);
+    }, 600);
+  }
+
+  function handleGesture() {
+    var dx = touchEndX - touchStartX;
+
+    if (Math.abs(dx) < 10) {
+      toggleSlideshow();
+    } else if (dx < -30) {
+      stopSlideshow();
+      isPaused = true;
+      nextImage();
+    } else if (dx > 30) {
+      stopSlideshow();
+      isPaused = true;
+      prevImage();
+    }
+  }
+function createTrailDot(x, y) {
+  var dot = document.createElement("div");
+  dot.className = "trail-dot";
+  dot.style.left = (x - 10) + "px";
+  dot.style.top = (y - 10) + "px";
+  document.body.appendChild(dot);
+
+  setTimeout(function () {
+    if (dot.parentNode) {
+      dot.parentNode.removeChild(dot);
+    }
+  }, 400); // match fade duration
+}
+
+
+  // Touch interaction
+document.body.addEventListener("touchstart", function (e) {
+  touchStartX = e.changedTouches[0].screenX;
+  isSwiping = false;
+
+}, false);
+
+document.body.addEventListener("touchend", function (e) {
+  var touch = e.changedTouches[0];
+  touchEndX = touch.screenX;
+
+  if (!isSwiping) {
+    showRipple(touch.pageX, touch.pageY);
+  }
+
+  handleGesture();
+}, false);
+
+// Prevent iOS scroll
+document.body.addEventListener("touchmove", function (e) {
+  e.preventDefault(); // block scrolling
+  isSwiping = true;
+
+  var touch = e.changedTouches[0];
+  createTrailDot(touch.pageX, touch.pageY);
+}, { passive: false });
+
+
+  window.onload = loadImages;
+</script>
+
+
+
+
+</body>
+</html>
+
