@@ -1,5 +1,9 @@
 #!/usr/bin/python3
 
+# requires 
+#     sudo apt install libvips-tools
+#
+
 from flask import Flask, request, send_file, abort
 import os
 import subprocess
