@@ -24,18 +24,20 @@ Instructions: (assuming lighttpd web server on Debian / Raspberry Pi OS / DietPi
 
 3. Copy the systemd service file and lighttpd configuration file to their respective locations.
 
-4. Create a symlink to the directory where your photos are stored and call it 'photos' in /var/www/slideshow
+4. Copy the photo-resize-server.py file to /opt/photo-resize-server/
 
-5. Create a symlink to index-full.html and call it index.html in /var/www/slideshow
+5. Create a symlink to the directory where your photos are stored and call it 'photos' in /var/www/slideshow
 
-6. Create a symlink from /etc/lighttpd/conf-available/99-photo-proxy.conf
+6. Create a symlink to index-full.html and call it index.html in /var/www/slideshow
+
+7. Create a symlink from /etc/lighttpd/conf-available/99-photo-proxy.conf
    
 ```
 sudo ln -s ../conf-available/99-photo-proxy.conf /etc/lighttpd/conf-enabled/99-photo-proxy.conf
 sudo systemctl restart lighttpd
 ```
 
-7. Enable the systemd service:
+8. Enable the systemd service:
    
 ```
 sudo systemctl daemon-reload
@@ -55,7 +57,7 @@ curl -I http://localhost:5005/slideshow/photos/IMG_0001.JPG
 curl -I "Mozilla/5.0 (iPad; CPU OS 9_3_5 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Version/9.0 Mobile/13G36 Safari/601.1" http://127.0.0.1:5005/photos/IMG_0006.JPG
 ```
 
-9. Follow the log
+11. Follow the log
 
 ```
 journalctl -f -u photo-resize-server.service
