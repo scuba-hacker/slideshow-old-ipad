@@ -24,28 +24,25 @@ Instructions: (assuming lighttpd web server on Debian / Raspberry Pi OS / DietPi
 
 3. Copy the systemd service file and lighttpd configuration file to their respective locations.
 
-4. create a symlink to the directory where your photos are stored and call it 'photos' in /var/www/slideshow
+4. Create a symlink to the directory where your photos are stored and call it 'photos' in /var/www/slideshow
 
-5. create a symlink to index-full.html and call it index.html in /var/www/slideshow
+5. Create a symlink to index-full.html and call it index.html in /var/www/slideshow
 
-6. create a symlink from /etc/lighttpd/conf-available/99-photo-proxy.conf
+6. Create a symlink from /etc/lighttpd/conf-available/99-photo-proxy.conf
        sudo ln -s ../conf-available/99-photo-proxy.conf /etc/lighttpd/conf-enabled/99-photo-proxy.conf
        sudo systemctl restart lighttpd
 
-7. for enabling the systemd service:
+7. Enable the systemd service:
        sudo systemctl daemon-reload
        sudo systemctl enable photo-resize-server.service
        sudo systemctl start photo-resize-server.service
 
-       to test a regular browser request: (the journal will show serving original image)
+8. Test a regular browser request: (the journal will show serving original image)
          curl -I http://localhost:5005/slideshow/photos/IMG_0001.JPG
    
-       to test an iPad 2 browser request: (the journal will show serving resized image)
+9. Test an iPad 2 browser request: (the journal will show serving resized image)
          curl -I "Mozilla/5.0 (iPad; CPU OS 9_3_5 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Version/9.0 Mobile/13G36 Safari/601.1" http://127.0.0.1:5005/photos/IMG_0006.JPG
 
-9. to follow the log
+9. Follow the log
 
        journalctl -f -u photo-resize-server.service
-
-   
-
