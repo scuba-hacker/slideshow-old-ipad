@@ -131,7 +131,31 @@
   <img id="img2" class="slideshow" src="" alt="Slideshow Image 2" />
 </div>
 
+<div id="startup-indicator">Loading images....</div>
+
 <style>
+
+#startup-indicator {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.75);
+  color: white;
+  font-family: sans-serif;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 1.2em;
+  z-index: 10000;
+  transition: opacity 0.4s ease-in-out;
+}
+
+#startup-indicator.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+
   #slideshow-container {
     position: relative;
     width: 100%;
@@ -177,6 +201,47 @@
   var touchEndX = 0;
   var isSwiping = false;
 
+document.addEventListener("keydown", function (e) {
+  if (e.key === "ArrowRight") {
+    nextImage();
+    restartSlideshowTimer();
+  } else if (e.key === "ArrowLeft") {
+    prevImage();
+    restartSlideshowTimer();
+  } else if (e.key === " ") {
+    // Spacebar to toggle play/pause
+    toggleSlideshow();
+    e.preventDefault(); // prevent scrolling
+  }
+});
+
+  // Touch interaction
+document.body.addEventListener("touchstart", function (e) {
+  touchStartX = e.changedTouches[0].screenX;
+  isSwiping = false;
+
+}, false);
+
+document.body.addEventListener("touchend", function (e) {
+  var touch = e.changedTouches[0];
+  touchEndX = touch.screenX;
+
+  if (!isSwiping) {
+    showRipple(touch.pageX, touch.pageY);
+  }
+
+  handleGesture();
+}, false);
+
+// Prevent iOS scroll
+document.body.addEventListener("touchmove", function (e) {
+  e.preventDefault(); // block scrolling
+  isSwiping = true;
+
+  var touch = e.changedTouches[0];
+  createTrailDot(touch.pageX, touch.pageY);
+}, { passive: false });
+
   function loadImages() {
     var xhr = new XMLHttpRequest();
     xhr.open("GET", "photos/", true);
@@ -188,10 +253,14 @@
         for (var i = 0; i < links.length; i++) {
           var href = links[i].getAttribute("href");
           if (href && href.match(/\.(jpe?g|png)$/i)) {
-            images.push("photos/" + href);
+            images.push("/photos/" + href);
           }
         }
-        if (images.length > 0) startSlideshow();
+        
+	if (images.length > 0) {
+          document.getElementById("startup-indicator").classList.add("hidden");
+	  startSlideshow();
+        }
       }
     };
     xhr.send();
@@ -202,7 +271,7 @@ function updateCounter() {
   counter.innerHTML = (current + 1) + " / " + images.length;
 }
 
-    function updateImage() {
+function updateImage() {
     var img1 = document.getElementById("img1");
     var img2 = document.getElementById("img2");
     var bottomImg = currentImg === 1 ? img1 : img2;
@@ -220,15 +289,23 @@ function updateCounter() {
     name.innerHTML = images[current].split("/").pop();
 
     updateCounter();
-	}
+}
 
-  function startSlideshow() {
+function startSlideshow() {
+  updateImage();
+  if (slideshowInterval) clearInterval(slideshowInterval);
+
+  slideshowInterval = setInterval(function () {
+    current = (current + 1) % images.length;
     updateImage();
-    slideshowInterval = setInterval(function () {
-      current = (current + 1) % images.length;
-      updateImage();
-    }, slideShowDelaySeconds * 1000);
-  }
+  }, slideShowDelaySeconds * 1000);
+}
+
+function advanceAndRestart(direction) {
+  current = (current + direction + images.length) % images.length;
+  updateImage();
+  if (!isPaused) startSlideshow();
+}
 
   function stopSlideshow() {
     clearInterval(slideshowInterval);
@@ -246,15 +323,14 @@ function updateCounter() {
     isPaused = !isPaused;
   }
 
-  function nextImage() {
-    current = (current + 1) % images.length;
-    updateImage();
-  }
+function nextImage() {
+  advanceAndRestart(1);
+}
 
-  function prevImage() {
-    current = (current - 1 + images.length) % images.length;
-    updateImage();
-  }
+function prevImage() {
+  advanceAndRestart(-1);
+}
+
 function showStatusIcon(type) {
   var indicator = document.getElementById("status-indicator");
 
@@ -323,36 +399,18 @@ function createTrailDot(x, y) {
   }, 400); // match fade duration
 }
 
-
-  // Touch interaction
-document.body.addEventListener("touchstart", function (e) {
-  touchStartX = e.changedTouches[0].screenX;
-  isSwiping = false;
-
-}, false);
-
-document.body.addEventListener("touchend", function (e) {
-  var touch = e.changedTouches[0];
-  touchEndX = touch.screenX;
-
-  if (!isSwiping) {
-    showRipple(touch.pageX, touch.pageY);
+function restartSlideshowTimer() {
+  if (!isPaused) {
+    clearInterval(slideshowInterval);
+    slideshowInterval = setInterval(function () {
+      current = (current + 1) % images.length;
+      updateImage();
+    }, slideShowDelaySeconds * 1000);
   }
-
-  handleGesture();
-}, false);
-
-// Prevent iOS scroll
-document.body.addEventListener("touchmove", function (e) {
-  e.preventDefault(); // block scrolling
-  isSwiping = true;
-
-  var touch = e.changedTouches[0];
-  createTrailDot(touch.pageX, touch.pageY);
-}, { passive: false });
-
+}
 
   window.onload = loadImages;
+
 </script>
 
 

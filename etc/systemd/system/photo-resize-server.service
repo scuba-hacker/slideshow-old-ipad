@@ -1,0 +1,15 @@
+[Unit]
+Description=Image Resize Server using VIPS
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/photo-resize-server
+ExecStart=/usr/bin/python3 /opt/photo-resize-server/photo-resize-server.py
+Restart=on-failure
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
+
